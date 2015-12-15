@@ -151,7 +151,7 @@ console.log(graph);
 
     var updateGraph = function(iGraphIndex, iData) {
 
-      // Graph's SVG container.
+      // Create/get graph's SVG container.
       var svg = d3.select("#graph-"+ iGraphIndex);
       if (svg.empty()) {
         var graphDiv = d3.select("#graph-container").append("div")
@@ -165,37 +165,44 @@ console.log(graph);
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       }
 
-console.log("iData");
-console.log(iData);
+// console.log("iData");
+// console.log(iData);
 
       var data = iData.data;
 
-console.log("data");
-console.log(data);
+// console.log("data");
+// console.log(data);
 
       // Update scales.
       x.domain(d3.extent(data, function(d) { return d.time_stamp; }));
       y.domain(d3.extent(data, function(d) { return d.tweet_count; }));
 
-      svg.append("g")
-          .attr("class", "x axis")
-          .attr("transform", "translate(0," + height + ")")
-          .call(xAxis);
+console.log('svg.select(".x.axis")');
+console.log(svg.select(".x.axis"));
 
-      svg.append("g")
-          .attr("class", "y axis")
-          .call(yAxis)
-        .append("text")
+      // Create/update DOM elements.
+      var domXAxis = svg.select(".x.axis");
+      if (domXAxis.empty()){
+        domXAxis = svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")");
+      }
+      domXAxis.transition()
+        .call(xAxis);
+
+      var domYAxis = svg.select(".y.axis");
+      if (domYAxis.empty()){
+        domYAxis = svg.append("g")
+          .attr("class", "y axis");
+        domYAxis.append("text")
           .attr("transform", "rotate(-90)")
           .attr("y", 6)
           .attr("dy", ".71em")
           .style("text-anchor", "end")
           .text("#Tweets");
-
-      // svg.append("path")
-      //     .datum(data)
-      //     .attr("class", "line")
-      //     .attr("d", line);
+      }
+      domYAxis.transition()
+        .call(yAxis);
 
       // ENTER line.
       var domLine = svg.select(".line");
@@ -205,7 +212,7 @@ console.log(data);
       }
 
       // UPDATE line.
-      var domLine = svg.select(".line")
+      domLine = svg.select(".line")
         .transition()
           .attr( "d", line(data) );
 
