@@ -11,6 +11,10 @@
       font: 10px sans-serif;
     }
 
+    .passion-name {
+     font-size: 16px;
+    }
+
     svg {
       display: block;
     }
@@ -54,6 +58,7 @@
         .orient("bottom");
     var yAxis = d3.svg.axis()
         .scale(y)
+        .tickValues(function(d){ return y.domain() })
         .orient("left");
     var line = d3.svg.line()
         .x(function(d) { return x(d.time_stamp); })
@@ -155,7 +160,9 @@ console.log(graph);
       var svg = d3.select("#graph-"+ iGraphIndex);
       if (svg.empty()) {
         var graphDiv = d3.select("#graph-container").append("div")
-          .append("div")
+          .append("div");
+        graphDiv.append("div")
+            .attr("class", "passion-name")
             .html(iData.topic_name);
         var svg = graphDiv.append("svg")
             .attr('id', "graph-" + iGraphIndex)
