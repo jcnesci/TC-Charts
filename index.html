@@ -56,78 +56,60 @@
         .scale(y)
         .orient("left");
     var line = d3.svg.line()
-        .x(function(d) { return x(d.time); })
-        .y(function(d) { return y(d.value); })
+        .x(function(d) { return x(d.time_stamp); })
+        .y(function(d) { return y(d.tweet_count); })
         .interpolate("monotone");
 
     d3.json("data/data_2.json", function(error, json_data) {
 
       // Data format:
       // time format = [YYYY,MM,DD,hh,15min,mm] (15min=0-3)
-// console.log(json_data);
+
+console.log("json_data");
+console.log(json_data);
+
+      allData = json_data.passions;
 
       // For each Passion, do...
-      json_data.passions.forEach(function(d, i){
+      allData.forEach(function(d, i){
 
-        var passionTitle = d.topic_name;
-        var data = d.data.map(function(d){
-          var time = new Date(d.time_stamp);
-          return {time: time, value: +d.tweet_count};
-        });
+        d = formatPassionData(d);
 
-        // Sort in ascending time order.
-        data.sort(function(a, b){
-          return a.time - b.time;
-        });
-
-        allData.push(data);
-
-        var graphDiv = d3.select("#graph-container").append("div")
-          .append("div")
-            .html(passionTitle);
-        var svg = graphDiv.append("svg")
-            .attr('id', "graph-"+i)
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-          .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-// console.log(data);
-
-        x.domain(d3.extent(data, function(d) { return d.time; }));
-        y.domain(d3.extent(data, function(d) { return d.value; }));
-
-        svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis);
-
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-          .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text("#Tweets");
-
-        svg.append("path")
-            .datum(data)
-            .attr("class", "line")
-            .attr("d", line);
+        updateGraph(i, d);
 
       });
 
     });
 
+    // Format raw passion data into proper data for graphing.
+    var formatPassionData = function(iData) {
+
+      iData.data.forEach(function(d){
+        // NB: check will fail if objects are passed across frame boundaries.
+        if (d.time_stamp instanceof Date === false) d.time_stamp = new Date(d.time_stamp);
+        d.tweet_count = +d.tweet_count;
+      });
+
+      // Sort in ascending time order.
+      iData.data.sort(function(a, b){
+        return a.time_stamp - b.time_stamp;
+      });
+
+      return iData;
+
+    }
+
     var addDataPoint = function() {
-      var curDataset = allData[0];
+
+      var curDataset = allData[0].data;
       var newDataPoint = getRandomDataPoint(curDataset);
+
 console.log("newDataPoint");
 console.log(newDataPoint);
+
       curDataset.push(newDataPoint);
-      updateGraph(0);
+      updateGraph(0, allData[0]);
+
     };
 
     var getRandomDataPoint = function(iData) {
@@ -136,13 +118,15 @@ console.log(newDataPoint);
 // console.log("randDataPoint");
 // console.log(randDataPoint);
       // return {time: Date.now() + 60000, value: randDataPoint.value};
-      var a = allData[0][allData[0].length-1].time.getTime() + 60000;
+      var a = iData[iData.length-1].time_stamp.getTime() + 60000;
 console.log(a);
       var b = new Date(a);
 console.log(b);
-      return {time: b, value: randDataPoint.value};
+      // return {time_stamp: b, tweet_count: randDataPoint.value};
+      return {time_stamp: b, tweet_count: 13000};
     };
 
+/*
     var updateGraph = function(iGraphIndex) {
       var graph = d3.select("#graph-"+ iGraphIndex);
       var curDataset = allData[0];
@@ -163,8 +147,71 @@ console.log(graph);
 
 // console.log(line);
     };
+*/
 
-    var interval = setInterval(addDataPoint, 2000);
+    var updateGraph = function(iGraphIndex, iData) {
+
+      // Graph's SVG container.
+      var svg = d3.select("#graph-"+ iGraphIndex);
+      if (svg.empty()) {
+        var graphDiv = d3.select("#graph-container").append("div")
+          .append("div")
+            .html(iData.topic_name);
+        var svg = graphDiv.append("svg")
+            .attr('id', "graph-" + iGraphIndex)
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      }
+
+console.log("iData");
+console.log(iData);
+
+      var data = iData.data;
+
+console.log("data");
+console.log(data);
+
+      // Update scales.
+      x.domain(d3.extent(data, function(d) { return d.time_stamp; }));
+      y.domain(d3.extent(data, function(d) { return d.tweet_count; }));
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis);
+
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+        .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".71em")
+          .style("text-anchor", "end")
+          .text("#Tweets");
+
+      // svg.append("path")
+      //     .datum(data)
+      //     .attr("class", "line")
+      //     .attr("d", line);
+
+      // ENTER line.
+      var domLine = svg.select(".line");
+      if ( domLine.empty() ) {
+        domLine = svg.append("path")
+          .attr( "class", "line");
+      }
+
+      // UPDATE line.
+      var domLine = svg.select(".line")
+        .transition()
+          .attr( "d", line(data) );
+
+    }
+
+    // var interval = setInterval(addDataPoint, 2000);
 
   </script>
 
