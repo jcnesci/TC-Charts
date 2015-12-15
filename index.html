@@ -41,6 +41,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.js"></script>
   <script type="text/javascript" charset="utf-8">
 
+    var allData = [];
     var margin = {top: 50, right: 50, bottom: 50, left: 50},
         width = 960 - margin.left - margin.right,
         height = 200 - margin.top - margin.bottom;
@@ -63,10 +64,10 @@
 
       // Data format:
       // time format = [YYYY,MM,DD,hh,15min,mm] (15min=0-3)
-console.log(json_data);
+// console.log(json_data);
 
       // For each Passion, do...
-      json_data.passions.forEach(function(d){
+      json_data.passions.forEach(function(d, i){
 
         var passionTitle = d.topic_name;
         var data = d.data.map(function(d){
@@ -74,21 +75,24 @@ console.log(json_data);
           return {time: time, value: +d.tweet_count};
         });
 
-        var graphDiv = d3.select("#graph-container").append("div")
-          .append("div")
-            .html(passionTitle);
-        var svg = graphDiv.append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-          .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
         // Sort in ascending time order.
         data.sort(function(a, b){
           return a.time - b.time;
         });
 
-console.log(data);
+        allData.push(data);
+
+        var graphDiv = d3.select("#graph-container").append("div")
+          .append("div")
+            .html(passionTitle);
+        var svg = graphDiv.append("svg")
+            .attr('id', "graph-"+i)
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// console.log(data);
 
         x.domain(d3.extent(data, function(d) { return d.time; }));
         y.domain(d3.extent(data, function(d) { return d.value; }));
@@ -116,6 +120,52 @@ console.log(data);
       });
 
     });
+
+    var addDataPoint = function() {
+      var curDataset = allData[0];
+      var newDataPoint = getRandomDataPoint(curDataset);
+console.log("newDataPoint");
+console.log(newDataPoint);
+      curDataset.push(newDataPoint);
+      updateGraph(0);
+    };
+
+    var getRandomDataPoint = function(iData) {
+      var randIndex = Math.random() * iData.length;
+      var randDataPoint = iData.slice(randIndex, randIndex+1)[0];
+// console.log("randDataPoint");
+// console.log(randDataPoint);
+      // return {time: Date.now() + 60000, value: randDataPoint.value};
+      var a = allData[0][allData[0].length-1].time.getTime() + 60000;
+console.log(a);
+      var b = new Date(a);
+console.log(b);
+      return {time: b, value: randDataPoint.value};
+    };
+
+    var updateGraph = function(iGraphIndex) {
+      var graph = d3.select("#graph-"+ iGraphIndex);
+      var curDataset = allData[0];
+console.log("graph");
+console.log(graph);
+
+      // var linechart = graph.selectAll(".line")
+      //   .data(curDataset);
+        // .attr('d', line);
+
+
+      var linechart = graph.selectAll(".line")
+        .transition()
+          .ease("linear")
+          .duration(1000)
+          .attr('d', line(curDataset));
+
+
+// console.log(line);
+    };
+
+    var interval = setInterval(addDataPoint, 2000);
+
   </script>
 
   </body>
